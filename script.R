@@ -1,17 +1,9 @@
-rm(list = ls())
-
-if (!require("ggplot2")) install.packages("ggplot2")
-if (!require("stringr")) install.packages("stringr")
-if (!require("dplyr")) install.packages("dplyr")
-if (!require("tidyverse")) install.packages("tidyverse")
-if (!require("MASS")) install.packages("MASS")
-
-
-library(tidyverse)
 library(dplyr)
 library(forcats)
 library(MASS)
 library(yaml)
+library(gt)
+library(targets)
 
 source("R/functions.R", encoding = "UTF-8")
 
@@ -19,7 +11,7 @@ source("R/functions.R", encoding = "UTF-8")
 
 # ENVIRONNEMENT ----------------------------
 
-api_token <- yaml::read_yaml("secrets.yaml")$JETON_API
+api_token <- yaml::read_yaml("R/secrets.yaml")$JETON_API
 
 
 
@@ -92,7 +84,23 @@ df %>%
   ), alpha = 0.2) +
   geom_histogram() # position = "dodge") + scale_fill_viridis_d()
 
+stats_age <- df %>%
+  group_by(decennie = decennie_a_partir_annee(aged)) %>%
+  summarise(n())
 
+table_age <- gt(stats_age) %>%
+  tab_header(
+    title = "Distribution des âges dans notre population"
+  ) %>%
+  fmt_number(
+    columns = `n()`,
+    sep_mark = " ",
+    decimals = 0
+  ) %>%
+  cols_label(
+    decennie = "Tranche d'âge",
+    `n()` = "Population"
+  )
 
 ## Part d'homme dans chaque cohorte ===========
 ggplot(df %>%
@@ -158,6 +166,8 @@ stats_agregees(df %>%
                  filter(sexe == "Femme" & couple == "2") %>%
                  mutate(aged = aged) %>%
                  pull(aged))
+
+
 
 # MODELISATION =================
 
