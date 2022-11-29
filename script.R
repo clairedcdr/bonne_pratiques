@@ -3,10 +3,12 @@ if (!require("stringr")) install.packages("stringr")
 if (!require("dplyr")) install.packages("dplyr")
 if (!require("tidyverse")) install.packages("tidyverse")
 
-
 library(tidyverse)
 library(dplyr)
+library(forcats)
+library(MASS)
 
+# Import des données -------------
 # j'importe les données avec read_csv2 parce que c'est un csv avec des ;
 # et que read_csv attend comme separateur des ,
 df <- readr::read_csv2(
@@ -18,6 +20,7 @@ df <- readr::read_csv2(
   )
 )
 
+## Correction erreurs =======
 # y a un truc qui va pas avec l'import, je corrige
 colnames(df) <- df[1, ]
 df <- df[2:nrow(df), ]
@@ -105,7 +108,7 @@ df2[df2$trans == "Z", "trans"] <- NA
 df2[df2$tp == "Z", "tp"] <- NA
 df2[endsWith(df2$naf08, "Z"), "naf08"] <- NA
 
-library(forcats)
+
 df2$sexe <- df2$sexe %>%
   fct_recode(Homme = "1", Femme = "2")
 
@@ -151,7 +154,7 @@ fonction_de_stat_agregee(df2 %>%
 api_pwd <- "trotskitueleski$1917"
 
 # modelisation
-library(MASS)
+
 df3 <- df2 %>%
   dplyr::select(surf, cs1, ur, couple, aged) %>%
   filter(surf != "Z")
