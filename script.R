@@ -1,3 +1,6 @@
+
+# Gestion de l'environnement ----------
+
 if (!require("ggplot2")) install.packages("ggplot2")
 if (!require("stringr")) install.packages("stringr")
 if (!require("dplyr")) install.packages("dplyr")
@@ -8,26 +11,51 @@ library(dplyr)
 library(forcats)
 library(MASS)
 
+# Creation de fonction ---------
+
+decennie_a_partir_annee <- function(annee) {
+  return(annee - annee %% 10)
+}
+
+# fonction de stat agregee
+fonction_de_stat_agregee <- function(a, b = "moyenne", ...) {
+  checkvalue <- FALSE
+  for (x in c("moyenne", "variance", "ecart-type", "sd")) {
+    checkvalue <- (checkvalue | b == x)
+  }
+  if (checkvalue == FALSE) stop("statistique non supportée")
+  
+  if (b == "moyenne") {
+    x <- mean(a, na.rm = TRUE, ...)
+  } else if (b == "ecart-type" || b == "sd") {
+    x <- sd(a, na.rm = TRUE, ...)
+  } else if (b == "variance") {
+    x <- var(a, na.rm = TRUE, ...)
+  }
+  return(x)
+}
+
+
 # Import des données -------------
 # j'importe les données avec read_csv2 parce que c'est un csv avec des ;
 # et que read_csv attend comme separateur des ,
 df <- readr::read_csv2(
   "individu_reg.csv",
-  col_names = c(
+  col_select = c(
     "region", "aemm", "aged", "anai", "catl", "cs1", "cs2", "cs3",
     "couple", "na38", "naf08", "pnai12", "sexe", "surf", "tp",
     "trans", "ur"
   )
 )
 
-## Correction erreurs =======
-# y a un truc qui va pas avec l'import, je corrige
-colnames(df) <- df[1, ]
-df <- df[2:nrow(df), ]
+# ## Correction erreurs =======
+# # y a un truc qui va pas avec l'import, je corrige
+# colnames(df) <- df[1, ]
+# df <- df[2:nrow(df), ]
 
 df2 <- df %>%
-  select(c(
-    "region", "dept", "aemm", "aged", "anai", "catl", "cs1", "cs2",
+  dplyr::select(c(
+    "region", "aemm", "aged", "anai", "catl", "cs1", "cs2",
     "cs3", "couple", "na38", "naf08", "pnai12", "sexe", "surf", "tp",
     "trans", "ur"
   ))
@@ -45,13 +73,11 @@ print(summarise(df2, length(unique(unlist(cs3[!is.na(cs3)])))))
 print_data_frame <- summarise(group_by(df2, aged), n())
 print(print_data_frame)
 
-decennie_a_partir_annee <- function(annee) {
-  return(annee - annee %% 10)
-}
+
 
 
 df2 %>%
-  select(aged) %>%
+  dplyr::select(aged) %>%
   ggplot(.) +
   geom_histogram(aes(x = 5 * floor(as.numeric(aged) / 5)), stat = "count")
 
@@ -112,23 +138,7 @@ df2[endsWith(df2$naf08, "Z"), "naf08"] <- NA
 df2$sexe <- df2$sexe %>%
   fct_recode(Homme = "1", Femme = "2")
 
-# fonction de stat agregee
-fonction_de_stat_agregee <- function(a, b = "moyenne", ...) {
-  checkvalue <- FALSE
-  for (x in c("moyenne", "variance", "ecart-type", "sd")) {
-    checkvalue <- (checkvalue | b == x)
-  }
-  if (checkvalue == FALSE) stop("statistique non supportée")
-  
-  if (b == "moyenne") {
-    x <- mean(a, na.rm = TRUE, ...)
-  } else if (b == "ecart-type" || b == "sd") {
-    x <- sd(a, na.rm = TRUE, ...)
-  } else if (b == "variance") {
-    x <- var(a, na.rm = TRUE, ...)
-  }
-  return(x)
-}
+
 fonction_de_stat_agregee(rnorm(10))
 fonction_de_stat_agregee(rnorm(10), "ecart-type")
 fonction_de_stat_agregee(rnorm(10), "variance")
