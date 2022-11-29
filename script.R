@@ -1,5 +1,5 @@
 
-# Gestion de l'environnement ----------
+# ENVIRONNEMENT -----------
 
 if (!require("ggplot2")) install.packages("ggplot2")
 if (!require("stringr")) install.packages("stringr")
@@ -11,7 +11,11 @@ library(dplyr)
 library(forcats)
 library(MASS)
 
-# Creation de fonction ---------
+
+api_token <- yaml::read_yaml("secrets.yaml")$jeton_api
+
+
+# FONCTIONS ----------------------------
 
 decennie_a_partir_annee <- function(annee) {
   return(annee - annee %% 10)
@@ -35,31 +39,49 @@ fonction_de_stat_agregee <- function(a, b = "moyenne", ...) {
   return(x)
 }
 
+fonction_de_stat_agregee(rnorm(10))
+fonction_de_stat_agregee(rnorm(10), "ecart-type")
+fonction_de_stat_agregee(rnorm(10), "variance")
 
-# Import des données -------------
+
+
+# IMPORT DONNEES ----------------------------
+
 # j'importe les données avec read_csv2 parce que c'est un csv avec des ;
 # et que read_csv attend comme separateur des ,
 df <- readr::read_csv2(
   "individu_reg.csv",
-  col_select = c(
+  col_select  = c(
     "region", "aemm", "aged", "anai", "catl", "cs1", "cs2", "cs3",
     "couple", "na38", "naf08", "pnai12", "sexe", "surf", "tp",
     "trans", "ur"
   )
 )
+# RETRAITEMENT DES DONNEES -------------------------
 
-# ## Correction erreurs =======
-# # y a un truc qui va pas avec l'import, je corrige
-# colnames(df) <- df[1, ]
-# df <- df[2:nrow(df), ]
+## TRAITEMENT VALEURS MANQUANTES ==================
 
-df2 <- df %>%
-  dplyr::select(c(
-    "region", "aemm", "aged", "anai", "catl", "cs1", "cs2",
-    "cs3", "couple", "na38", "naf08", "pnai12", "sexe", "surf", "tp",
-    "trans", "ur"
-  ))
-print(df2, 20)
+df <- df %>%
+  mutate(na38 = na_if(na38, "ZZ"),
+         trans = na_if(trans, "Z"),
+         tp = na_if(tp, "Z"),
+         naf08 = na_if(naf08, "ZZZZZ"),
+         aemm = na_if(aemm, "ZZZZ"))
+
+## TYPES EN FACTEUR ===================
+
+df$sexe <- df$sexe %>%
+  as.character() %>%
+  fct_recode(Homme = "1", Femme = "2")
+
+df <- df %>%
+  mutate(aged = as.numeric(aged))
+
+df <- df %>%
+  mutate(across(
+    c(-region, -aemm, -aged, -anai),
+    as.factor)
+  )
 
 
 # combien de professions
@@ -129,14 +151,10 @@ p <- ggplot(df3) +
 
 ggsave("p.png", p)
 
-df2[df2$na38 == "ZZ", "na38"] <- NA
-df2[df2$trans == "Z", "trans"] <- NA
-df2[df2$tp == "Z", "tp"] <- NA
-df2[endsWith(df2$naf08, "Z"), "naf08"] <- NA
 
 
-df2$sexe <- df2$sexe %>%
-  fct_recode(Homme = "1", Femme = "2")
+
+
 
 
 fonction_de_stat_agregee(rnorm(10))
@@ -161,7 +179,7 @@ fonction_de_stat_agregee(df2 %>%
                            mutate(aged = as.numeric(aged)) %>%
                            pull(aged))
 
-api_pwd <- "trotskitueleski$1917"
+
 
 # modelisation
 
